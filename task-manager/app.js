@@ -4,6 +4,8 @@ const tasks = require('./routes/tasks.js')
 const connectDB = require('./mongoDB/connect.js')
 require('dotenv').config()
 
+//middleware
+app.use(express.static('./public'));
 app.use(express.json());
 
 //routes
