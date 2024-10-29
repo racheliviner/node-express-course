@@ -10,9 +10,10 @@ app.use(express.json());
 
 //routes
 app.use('/api/v1/tasks', tasks)
+app.use((req,res)=>res.status(404).send('Route does not exist'))
 
 //start the server
-const port = 3000
+const port = process.env.PORT || 3000
 
 async function start(){
     try {
