@@ -9,6 +9,8 @@ require('express-async-errors')
 
 //middleware
 app.use(express.json())
+app.use(express.static(path.join(__dirname, 'public')));
+
 
 //routes
 app.get('/', (req, res) => {
