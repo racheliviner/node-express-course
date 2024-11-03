@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .filter-group {
+            margin-bottom: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .product-card h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="filters">
+            <div class="filter-group">
+                <label>Search by name:</label>
+                <input type="text" id="nameFilter" placeholder="Product name...">
+            </div>
+
+            <div class="filter-group">
+                <label>Company:</label>
+                <select id="companyFilter">
+                    <option value="">All Companies</option>
+                    <option value="ikea">IKEA</option>
+                    <option value="liddy">Liddy</option>
+                    <option value="caressa">Caressa</option>
+                    <option value="marcos">Marcos</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Featured:</label>
+                <select id="featuredFilter">
+                    <option value="">All Products</option>
+                    <option value="true">Featured Only</option>
+                    <option value="false">Non-Featured Only</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Price Range:</label>
+                <input type="number" id="minPrice" placeholder="Min price">
+                <input type="number" id="maxPrice" placeholder="Max price">
+            </div>
+
+            <div class="filter-group">
+                <label>Rating:</label>
+                <input type="number" id="minRating" placeholder="Min rating" min="0" max="5">
+                <input type="number" id="maxRating" placeholder="Max rating" min="0" max="5">
+            </div>
+
+            <div class="filter-group">
+                <label>Sort By:</label>
+                <select id="sortFilter">
+                    <option value="">Created Date</option>
+                    <option value="name">Name</option>
+                    <option value="price">Price (Low to High)</option>
+                    <option value="-price">Price (High to Low)</option>
+                    <option value="rating">Rating (Low to High)</option>
+                    <option value="-rating">Rating (High to Low)</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Items per page:</label>
+                <select id="limitFilter">
+                    <option value="">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+
+            <button onclick="fetchProducts()">Apply Filters</button>
+        </div>
+
+        <div id="products" class="products-grid"></div>
+        <div class="pagination">
+            <button onclick="previousPage()">Previous</button>
+            <span id="currentPage">Page 1</span>
+            <button onclick="nextPage()">Next</button>
+        </div>
+        <div id="error" class="error"></div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        
+        async function fetchProducts() {
+            const nameFilter = document.getElementById('nameFilter').value;
+            const companyFilter = document.getElementById('companyFilter').value;
+            const featuredFilter = document.getElementById('featuredFilter').value;
+            const minPrice = document.getElementById('minPrice').value;
+            const maxPrice = document.getElementById('maxPrice').value;
+            const minRating = document.getElementById('minRating').value;
+            const maxRating = document.getElementById('maxRating').value;
+            const sortFilter = document.getElementById('sortFilter').value;
+            const limitFilter = document.getElementById('limitFilter').value;
+
+            let url = new URL('http://localhost:3000/api/v1/products');
+            let params = new URLSearchParams();
+
+            if (nameFilter) params.append('name', nameFilter);
+            if (companyFilter) params.append('company', companyFilter);
+            if (featuredFilter) params.append('featured', featuredFilter);
+            if (sortFilter) params.append('sort', sortFilter);
+            if (limitFilter) params.append('limit', limitFilter);
+            params.append('page', currentPage);
+
+            // Construct numeric filters
+            let numericFilters = [];
+            if (minPrice) numericFilters.push(`price>=${minPrice}`);
+            if (maxPrice) numericFilters.push(`price<=${maxPrice}`);
+            if (minRating) numericFilters.push(`rating>=${minRating}`);
+            if (maxRating) numericFilters.push(`rating<=${maxRating}`);
+            
+            if (numericFilters.length > 0) {
+                params.append('numericFilters', numericFilters.join(','));
+            }
+
+            url.search = params.toString();
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                displayProducts(data.products);
+                document.getElementById('currentPage').textContent = `Page ${currentPage}`;
+                document.getElementById('error').textContent = '';
+            } catch (error) {
+                document.getElementById('error').textContent = 'Error fetching products. Please try again.';
+                console.error('Error:', error);
+            }
+        }
+
+        function displayProducts(products) {
+            const productsContainer = document.getElementById('products');
+            productsContainer.innerHTML = '';
+
+            products.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                productCard.innerHTML = `
+                    <h3>${product.name}</h3>
+                    <p>Price: $${product.price}</p>
+                    <p>Rating: ${product.rating}</p>
+                    <p>Company: ${product.company}</p>
+                    <p>Featured: ${product.featured ? 'Yes' : 'No'}</p>
+                `;
+                productsContainer.appendChild(productCard);
+            });
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchProducts();
+            }
+        }
+
+        function nextPage() {
+            currentPage++;
+            fetchProducts();
+        }
+
+        // Initial load
+        fetchProducts();
+    </script>
+</body>
+</html>
