@@ -4,6 +4,9 @@ const tasks = require('./routes/tasks.js')
 const connectDB = require('./mongoDB/connect.js')
 require('dotenv').config()
 
+// Middleware to log incoming requests 
+app.use((req, res, next) => { console.log(`Request received for ${req.url}`); next(); });
+
 //middleware
 app.use(express.static('./public'));
 app.use(express.json());
